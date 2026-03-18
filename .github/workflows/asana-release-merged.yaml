@@ -4,7 +4,7 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - main  # (Change to 'master' if that is your primary branch)
+      - main  
 
 jobs:
   update-asana-on-merge:
