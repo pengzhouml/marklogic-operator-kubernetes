@@ -1,0 +1,55 @@
+flowchart TD
+    User[Platform engineer or CI] -->|kubectl, helm, make| K8sAPI[Kubernetes API]
+
+    subgraph Operator[MarkLogic Operator]
+        Manager[controller-runtime manager\ncmd/main.go]
+        ClusterCtrl[MarklogicClusterReconciler]
+        GroupCtrl[MarklogicGroupReconciler]
+        ClusterHandler[ClusterContext +\nReconsileMarklogicClusterHandler]
+        GroupHandler[OperatorContext +\nReconsileMarklogicGroupHandler]
+    end
+
+    subgraph CRDs[Custom Resources]
+        ClusterCR[MarklogicCluster]
+        GroupCR[MarklogicGroup]
+    end
+
+    subgraph Shared[Shared cluster resources]
+        SA[ServiceAccount]
+        Secret[Admin Secret]
+        NetPol[NetworkPolicy]
+        HAProxy[HAProxy resources]
+        Ingress[Ingress]
+    end
+
+    subgraph Workload[Group-owned workload resources]
+        Svc[Services]
+        CM[ConfigMaps]
+        FluentBit[Optional Fluent Bit ConfigMap]
+        Sts[StatefulSet]
+        Pods[MarkLogic Pods]
+    end
+
+    K8sAPI --> ClusterCR
+    K8sAPI --> GroupCR
+    K8sAPI --> Manager
+
+    Manager --> ClusterCtrl
+    Manager --> GroupCtrl
+
+    ClusterCR --> ClusterCtrl
+    ClusterCtrl --> ClusterHandler
+    ClusterHandler --> SA
+    ClusterHandler --> Secret
+    ClusterHandler --> NetPol
+    ClusterHandler --> HAProxy
+    ClusterHandler --> Ingress
+    ClusterHandler -->|fan out desired groups| GroupCR
+
+    GroupCR --> GroupCtrl
+    GroupCtrl --> GroupHandler
+    GroupHandler --> Svc
+    GroupHandler --> CM
+    GroupHandler --> FluentBit
+    GroupHandler --> Sts
+    Sts --> Pods
